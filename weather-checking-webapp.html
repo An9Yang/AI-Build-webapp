@@ -15,21 +15,70 @@
     />
     <!-- Chart.js Library -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Leaflet.js for Interactive Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Particles.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/particles.js"></script>
+    <!-- Lottie Animation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.7.4/lottie.min.js"></script>
     <style>
       /* CSS Styles */
 
       body {
         margin: 0;
         font-family: "Poppins", sans-serif;
-        background: linear-gradient(to bottom, #a18cd1, #fbc2eb);
-        color: #fff;
+        background: var(--bg-gradient);
+        color: var(--text-color);
         text-align: center;
+        transition: background 0.5s, color 0.5s;
+        overflow-x: hidden;
+      }
+
+      :root {
+        --bg-gradient: linear-gradient(to bottom, #a18cd1, #fbc2eb);
+        --text-color: #fff;
       }
 
       .app-container {
         padding: 50px 20px;
         max-width: 1000px;
         margin: auto;
+        position: relative;
+        overflow: hidden;
+      }
+
+      #particles-js {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -2;
+      }
+
+      .background-animation {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -3;
+        background-size: cover;
+        background-position: center;
+        filter: brightness(0.7);
+        animation: backgroundFade 10s infinite alternate;
+      }
+
+      @keyframes backgroundFade {
+        0% {
+          opacity: 0.7;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.7;
+        }
       }
 
       .weather-widget {
@@ -38,11 +87,18 @@
         padding: 30px;
         margin-bottom: 30px;
         animation: fadeIn 1s;
+        backdrop-filter: blur(5px);
+      }
+
+      .weather-widget:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transition: background 0.3s;
       }
 
       .weather-info h1 {
         font-size: 64px;
         margin: 0;
+        animation: bounceIn 1s;
       }
 
       .weather-info p {
@@ -53,6 +109,19 @@
       .weather-icon i {
         font-size: 100px;
         margin-top: 20px;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
       }
 
       .details {
@@ -78,6 +147,11 @@
         background: rgba(255, 255, 255, 0.1);
         border-radius: 10px;
         padding: 15px;
+        transition: transform 0.3s;
+      }
+
+      .detail-item:hover {
+        transform: translateY(-10px);
       }
 
       .detail-item h3 {
@@ -113,6 +187,12 @@
         border-radius: 10px;
         padding: 15px;
         text-align: center;
+        transition: transform 0.3s;
+      }
+
+      .forecast-item:hover {
+        transform: translateY(-10px);
+        background: rgba(255, 255, 255, 0.2);
       }
 
       .forecast-item h4 {
@@ -123,6 +203,16 @@
       .forecast-item i {
         font-size: 36px;
         margin-bottom: 5px;
+        animation: rotateIcon 5s linear infinite;
+      }
+
+      @keyframes rotateIcon {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
       }
 
       .forecast-item p {
@@ -141,6 +231,7 @@
         transition: background 0.3s;
         animation: bounceIn 1s;
         margin-top: 20px;
+        margin-right: 10px;
       }
 
       .social-share button:hover {
@@ -150,6 +241,7 @@
       .location-input {
         margin-bottom: 20px;
         animation: fadeInDown 1s;
+        position: relative;
       }
 
       .location-input input {
@@ -160,6 +252,21 @@
         border: none;
         border-radius: 50px;
         text-align: center;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      #map {
+        height: 400px;
+        margin: 30px 0;
+        border-radius: 15px;
+        animation: fadeInUp 1s;
+      }
+
+      /* Mascot Styles */
+      #mascot {
+        width: 200px;
+        height: 200px;
+        margin: 0 auto;
       }
 
       /* Keyframes for Animations */
@@ -190,7 +297,6 @@
         }
         to {
           opacity: 1;
-          transform: translateY(0);
         }
       }
 
@@ -223,6 +329,9 @@
     </style>
   </head>
   <body>
+    <div id="particles-js"></div>
+    <div class="background-animation" id="backgroundAnimation"></div>
+
     <div class="app-container">
       <div class="location-input">
         <input type="text" id="locationInput" placeholder="Enter city name" />
@@ -236,6 +345,10 @@
         <div class="weather-icon">
           <i id="weatherIcon" class="fas fa-cloud-sun"></i>
         </div>
+        <!-- Animated Mascot -->
+        <div id="mascot"></div>
+        <!-- Funny Message -->
+        <p id="funnyMessage" style="font-size: 20px; margin-top: 20px"></p>
       </div>
       <div class="details">
         <h2>Current Weather Details</h2>
@@ -278,6 +391,7 @@
           <!-- Forecast items will be added here -->
         </div>
       </div>
+      <div id="map"></div>
       <div class="social-share">
         <button id="shareButton">Share with Friends</button>
       </div>
@@ -287,7 +401,7 @@
     <script>
       // JavaScript Code
 
-      const apiKey = "08c65c9e3bbf11237c22a71e50181d8f"; // Your OpenWeatherMap API Key
+      const apiKey = "08c65c9e3bbf11237c22a71e50181d8f"; // Replace with your OpenWeatherMap API Key
 
       const temperatureElement = document.getElementById("temperature");
       const conditionElement = document.getElementById("condition");
@@ -304,8 +418,16 @@
         .getElementById("windChart")
         .getContext("2d");
       const forecastContainer = document.getElementById("forecast");
+      const backgroundAnimation = document.getElementById(
+        "backgroundAnimation"
+      );
+      const particlesJSContainer = document.getElementById("particles-js");
+      const mascotElement = document.getElementById("mascot");
+      const funnyMessageElement = document.getElementById("funnyMessage");
+      const mapElement = document.getElementById("map");
 
       let tempChart, humidityChart, windChart; // Chart instances
+      let map; // Map instance
 
       // Current Details Elements
       const humidityElement = document.getElementById("humidity");
@@ -313,6 +435,18 @@
       const pressureElement = document.getElementById("pressure");
       const sunriseElement = document.getElementById("sunrise");
       const sunsetElement = document.getElementById("sunset");
+
+      // Initialize Map
+      function initMap(lat, lon) {
+        if (map) {
+          map.setView([lat, lon], 10);
+        } else {
+          map = L.map("map").setView([lat, lon], 10);
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "© OpenStreetMap contributors",
+          }).addTo(map);
+        }
+      }
 
       // Fetch Weather Data
       function fetchWeather(city) {
@@ -370,6 +504,21 @@
 
         // Update Forecast
         updateForecast(forecastData);
+
+        // Update Map
+        initMap(currentData.coord.lat, currentData.coord.lon);
+
+        // Update Background
+        updateBackground(condition);
+
+        // Update Particles Effect
+        updateParticles(condition);
+
+        // Update Mascot
+        updateMascot(condition);
+
+        // Display Funny Message
+        displayFunnyMessage(condition, temp);
       }
 
       // Capitalize First Letter
@@ -399,6 +548,161 @@
           default:
             return "fa-cloud-sun";
         }
+      }
+
+      // Update Background Based on Weather Condition
+      function updateBackground(condition) {
+        let imageUrl;
+        switch (condition.toLowerCase()) {
+          case "clear":
+            imageUrl = "https://source.unsplash.com/1600x900/?clear,sky";
+            break;
+          case "clouds":
+            imageUrl = "https://source.unsplash.com/1600x900/?cloudy,sky";
+            break;
+          case "rain":
+          case "drizzle":
+            imageUrl = "https://source.unsplash.com/1600x900/?rain";
+            break;
+          case "thunderstorm":
+            imageUrl = "https://source.unsplash.com/1600x900/?thunderstorm";
+            break;
+          case "snow":
+            imageUrl = "https://source.unsplash.com/1600x900/?snow";
+            break;
+          case "mist":
+          case "fog":
+          case "haze":
+            imageUrl = "https://source.unsplash.com/1600x900/?fog";
+            break;
+          default:
+            imageUrl = "https://source.unsplash.com/1600x900/?weather";
+            break;
+        }
+        backgroundAnimation.style.backgroundImage = `url('${imageUrl}')`;
+      }
+
+      // Update Particles Effect Based on Weather
+      function updateParticles(condition) {
+        let particlesConfig;
+        switch (condition.toLowerCase()) {
+          case "rain":
+          case "drizzle":
+            particlesConfig = rainConfig;
+            break;
+          case "snow":
+            particlesConfig = snowConfig;
+            break;
+          default:
+            particlesConfig = clearConfig;
+            break;
+        }
+        particlesJS("particles-js", particlesConfig);
+      }
+
+      // Particles.js Configurations
+      const rainConfig = {
+        particles: {
+          number: { value: 200 },
+          color: { value: "#fff" },
+          shape: { type: "circle" },
+          opacity: { value: 0.5 },
+          size: { value: 2 },
+          move: { direction: "bottom", speed: 10 },
+        },
+        interactivity: { events: { onclick: { enable: false } } },
+        retina_detect: true,
+      };
+
+      const snowConfig = {
+        particles: {
+          number: { value: 150 },
+          color: { value: "#fff" },
+          shape: { type: "circle" },
+          opacity: { value: 0.8 },
+          size: { value: 4 },
+          move: { direction: "bottom", speed: 2 },
+        },
+        interactivity: { events: { onclick: { enable: false } } },
+        retina_detect: true,
+      };
+
+      const clearConfig = {
+        particles: { number: { value: 0 } },
+        interactivity: { events: { onclick: { enable: false } } },
+        retina_detect: true,
+      };
+
+      // Update Mascot Based on Weather
+      function updateMascot(condition) {
+        let animationDataUrl;
+        switch (condition.toLowerCase()) {
+          case "clear":
+            animationDataUrl =
+              "https://assets3.lottiefiles.com/packages/lf20_dgjK9U.json"; // Sunny animation
+            break;
+          case "clouds":
+            animationDataUrl =
+              "https://assets2.lottiefiles.com/packages/lf20_xlkxtmul.json"; // Cloudy animation
+            break;
+          case "rain":
+          case "drizzle":
+            animationDataUrl =
+              "https://assets7.lottiefiles.com/packages/lf20_jpxsax4j.json"; // Rainy animation
+            break;
+          case "thunderstorm":
+            animationDataUrl =
+              "https://assets5.lottiefiles.com/packages/lf20_kxsd2ytq.json"; // Thunderstorm animation
+            break;
+          case "snow":
+            animationDataUrl =
+              "https://assets1.lottiefiles.com/packages/lf20_w49jmtpa.json"; // Snowy animation
+            break;
+          default:
+            animationDataUrl =
+              "https://assets3.lottiefiles.com/packages/lf20_dgjK9U.json"; // Default sunny animation
+            break;
+        }
+        lottie.loadAnimation({
+          container: mascotElement,
+          renderer: "svg",
+          loop: true,
+          autoplay: true,
+          path: animationDataUrl,
+        });
+      }
+
+      // Display Funny Message Based on Weather and Temperature
+      function displayFunnyMessage(condition, temp) {
+        let message;
+        if (temp > 30) {
+          message = "It's hotter than a jalapeño's armpit!";
+        } else if (temp < 0) {
+          message = "It's so cold, even the polar bears are shivering!";
+        } else {
+          switch (condition.toLowerCase()) {
+            case "rain":
+            case "drizzle":
+              message = "Don't forget your umbrella! ☔";
+              break;
+            case "snow":
+              message = "Time for a snowball fight! ❄️";
+              break;
+            case "clear":
+              message = "A perfect day to soak up some sun! ☀️";
+              break;
+            case "clouds":
+              message = "A bit cloudy, but still a great day!";
+              break;
+            case "thunderstorm":
+              message = "Stay safe out there! ⚡";
+              break;
+            default:
+              message = "Enjoy your day!";
+              break;
+          }
+        }
+        funnyMessageElement.textContent = message;
       }
 
       // Format Time with Timezone
@@ -579,8 +883,44 @@
         }
       });
 
-      // Initial Fetch
-      fetchWeather("New York");
+      // Geolocation Support
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            fetchWeatherByCoords(
+              position.coords.latitude,
+              position.coords.longitude
+            );
+          },
+          () => {
+            fetchWeather("New York"); // Default city
+          }
+        );
+      } else {
+        fetchWeather("New York"); // Default city
+      }
+
+      function fetchWeatherByCoords(lat, lon) {
+        const currentWeatherURL = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
+        const forecastURL = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
+
+        Promise.all([fetch(currentWeatherURL), fetch(forecastURL)])
+          .then(async ([currentRes, forecastRes]) => {
+            if (!currentRes.ok)
+              throw new Error("Unable to fetch current location weather");
+            if (!forecastRes.ok) throw new Error("Forecast data not available");
+
+            const currentData = await currentRes.json();
+            const forecastData = await forecastRes.json();
+
+            updateUI(currentData, forecastData);
+          })
+          .catch((error) => {
+            alert(error.message);
+          });
+      }
     </script>
+    <!-- Leaflet.js for Interactive Map -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   </body>
 </html>
