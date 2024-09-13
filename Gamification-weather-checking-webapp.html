@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Gamified Weather Checker</title>
+    <!-- Bootstrap CSS -->
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+
+    <!-- Font Awesome for Icons -->
+    <link
+      rel="stylesheet"
+      href="https://use.fontawesome.com/releases/v5.7.0/css/all.css"
+    />
+
+    <!-- SweetAlert2 CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.css"
+    />
+
+    <style>
+      body {
+        background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+        color: #fff;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        transition: background 0.5s;
+      }
+      .container {
+        margin-top: 50px;
+        max-width: 600px;
+      }
+      .scoreboard {
+        text-align: right;
+        margin-bottom: 20px;
+      }
+      .scoreboard p {
+        margin: 0;
+        font-size: 1.2em;
+      }
+      .weather-form {
+        margin-bottom: 30px;
+      }
+      .weather-result {
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+      }
+      .weather-result h2 {
+        font-size: 2em;
+      }
+      .weather-result img {
+        width: 100px;
+      }
+      .confetti-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 9999;
+      }
+      .theme-light {
+        background: #f0f0f0;
+        color: #000;
+      }
+      .theme-dark {
+        background: #000;
+        color: #fff;
+      }
+      @media (max-width: 576px) {
+        .scoreboard {
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1 class="text-center">Gamified Weather Checker</h1>
+        <div class="scoreboard">
+          <p>
+            Points: <span id="points">0</span> &nbsp; XP:
+            <span id="xp">0</span> &nbsp; Level:
+            <span id="level">1</span> &nbsp; Coins:
+            <span id="coins">0</span> &nbsp; Streak:
+            <span id="streak">0</span> days
+          </p>
+        </div>
+      </header>
+
+      <main>
+        <form class="weather-form">
+          <div class="input-group mb-3">
+            <input
+              type="text"
+              id="city-input"
+              class="form-control"
+              placeholder="Enter city name"
+              aria-label="City name"
+            />
+            <div class="input-group-append">
+              <button class="btn btn-light" type="submit" id="check-weather">
+                <i class="fas fa-search"></i> Check Weather
+              </button>
+            </div>
+          </div>
+        </form>
+        <div id="weather-result" class="weather-result d-none">
+          <!-- Weather data will be displayed here -->
+        </div>
+        <div class="text-center mt-4">
+          <button id="change-theme" class="btn btn-secondary">
+            Change Theme
+          </button>
+          <button id="share-button" class="btn btn-secondary">
+            <i class="fas fa-share-alt"></i> Share Achievement
+          </button>
+        </div>
+      </main>
+    </div>
+
+    <!-- Canvas for Confetti -->
+    <canvas class="confetti-canvas"></canvas>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+
+    <!-- Bootstrap JS (Optional for Bootstrap components) -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
+    <!-- SweetAlert2 Library -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+
+    <!-- OpenWeatherMap API Key (Replace 'YOUR_API_KEY' with your actual API key) -->
+    <script>
+      const apiKey = "08c65c9e3bbf11237c22a71e50181d8f"; // Replace with your OpenWeatherMap API key
+    </script>
+
+    <script>
+      $(document).ready(function () {
+        // Initialize variables
+        let points = parseInt(localStorage.getItem("points")) || 0;
+        let xp = parseInt(localStorage.getItem("xp")) || 0;
+        let level = parseInt(localStorage.getItem("level")) || 1;
+        let coins = parseInt(localStorage.getItem("coins")) || 0;
+        let badges = parseInt(localStorage.getItem("badges")) || 0;
+        let streak = parseInt(localStorage.getItem("streak")) || 0;
+        let lastCheckDate = localStorage.getItem("lastCheckDate");
+        let achievements =
+          JSON.parse(localStorage.getItem("achievements")) || {};
+        let dailyMission = JSON.parse(localStorage.getItem("dailyMission"));
+        const badgeThreshold = 100; // Points needed for a badge
+
+        // Update scoreboard
+        $("#points").text(points);
+        $("#xp").text(xp);
+        $("#level").text(level);
+        $("#coins").text(coins);
+        $("#streak").text(streak);
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem("theme") || "";
+        if (savedTheme) {
+          changeTheme(savedTheme);
+        }
+
+        // Weather form submission
+        $(".weather-form").on("submit", function (e) {
+          e.preventDefault();
+          const city = $("#city-input").val().trim();
+          if (city !== "") {
+            getWeather(city);
+          } else {
+            Swal.fire("Oops!", "Please enter a city name.", "warning");
+          }
+        });
+
+        function getWeather(city) {
+          $.ajax({
+            url: `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(
+              city
+            )}&appid=${apiKey}&units=metric`,
+            method: "GET",
+            success: function (data) {
+              displayWeather(data);
+              updatePoints(10); // Award 10 points for each successful check
+              updateXP(10); // Award 10 XP
+              updateCoins(5); // Award 5 coins
+              updateStreak();
+              checkAchievements(city);
+              updateMission(city);
+              triggerConfetti();
+              presentQuiz();
+            },
+            error: function () {
+              Swal.fire("Error", "City not found. Please try again.", "error");
+            },
+          });
+        }
+
+        function displayWeather(data) {
+          $("#weather-result").removeClass("d-none").html(`
+                    <h2>${data.name}, ${data.sys.country}</h2>
+                    <p><img src="https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png" alt="Weather icon"></p>
+                    <p><strong>${data.main.temp}°C</strong></p>
+                    <p>${data.weather[0].description}</p>
+                    <p>Humidity: ${data.main.humidity}%</p>
+                    <p>Wind Speed: ${data.wind.speed} m/s</p>
+                `);
+        }
+
+        function updatePoints(earnedPoints) {
+          points += earnedPoints;
+          $("#points").text(points);
+          localStorage.setItem("points", points);
+          checkForBadge();
+        }
+
+        function updateXP(earnedXP) {
+          xp += earnedXP;
+          $("#xp").text(xp);
+          localStorage.setItem("xp", xp);
+          checkForLevelUp();
+        }
+
+        function updateCoins(earnedCoins) {
+          coins += earnedCoins;
+          $("#coins").text(coins);
+          localStorage.setItem("coins", coins);
+        }
+
+        function checkForBadge() {
+          const newBadges = Math.floor(points / badgeThreshold);
+          if (newBadges > badges) {
+            badges = newBadges;
+            localStorage.setItem("badges", badges);
+            Swal.fire(
+              "🏅 New Badge!",
+              "You have earned a new badge!",
+              "success"
+            );
+          }
+        }
+
+        function checkForLevelUp() {
+          const xpForNextLevel = level * 100;
+          if (xp >= xpForNextLevel) {
+            xp = xp - xpForNextLevel;
+            level += 1;
+            $("#xp").text(xp);
+            $("#level").text(level);
+            localStorage.setItem("xp", xp);
+            localStorage.setItem("level", level);
+            Swal.fire(
+              "🎉 Level Up!",
+              `You've reached Level ${level}!`,
+              "success"
+            );
+          }
+        }
+
+        function updateStreak() {
+          const today = new Date().toDateString();
+          if (lastCheckDate !== today) {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            if (lastCheckDate === yesterday.toDateString()) {
+              streak += 1;
+            } else {
+              streak = 1;
+            }
+            $("#streak").text(streak);
+            localStorage.setItem("streak", streak);
+            localStorage.setItem("lastCheckDate", today);
+            Swal.fire(
+              "🔥 Streak Updated!",
+              `Current streak: ${streak} days`,
+              "info"
+            );
+          }
+        }
+
+        function checkAchievements(city) {
+          const hour = new Date().getHours();
+
+          // Early Bird Achievement
+          if (hour < 6 && !achievements.earlyBird) {
+            achievements.earlyBird = true;
+            Swal.fire("🏆 Achievement Unlocked!", "Early Bird!", "success");
+          }
+
+          // Night Owl Achievement
+          if (hour >= 22 && !achievements.nightOwl) {
+            achievements.nightOwl = true;
+            Swal.fire("🏆 Achievement Unlocked!", "Night Owl!", "success");
+          }
+
+          // Globetrotter Achievement
+          let citiesChecked =
+            JSON.parse(localStorage.getItem("citiesChecked")) || [];
+          if (!citiesChecked.includes(city.toLowerCase())) {
+            citiesChecked.push(city.toLowerCase());
+            localStorage.setItem(
+              "citiesChecked",
+              JSON.stringify(citiesChecked)
+            );
+            if (citiesChecked.length >= 10 && !achievements.globetrotter) {
+              achievements.globetrotter = true;
+              Swal.fire("🏆 Achievement Unlocked!", "Globetrotter!", "success");
+            }
+          }
+
+          localStorage.setItem("achievements", JSON.stringify(achievements));
+        }
+
+        // Daily Mission Setup
+        if (!dailyMission) {
+          resetDailyMission();
+        } else {
+          displayMission();
+        }
+
+        function updateMission(city) {
+          if (!dailyMission.completed) {
+            let missionCities =
+              JSON.parse(localStorage.getItem("missionCities")) || [];
+            if (!missionCities.includes(city.toLowerCase())) {
+              missionCities.push(city.toLowerCase());
+              localStorage.setItem(
+                "missionCities",
+                JSON.stringify(missionCities)
+              );
+              dailyMission.progress = missionCities.length;
+              if (dailyMission.progress >= dailyMission.target) {
+                dailyMission.completed = true;
+                Swal.fire(
+                  "🎯 Mission Completed!",
+                  "You completed the daily mission!",
+                  "success"
+                );
+                updatePoints(50);
+                updateCoins(20);
+              }
+              localStorage.setItem(
+                "dailyMission",
+                JSON.stringify(dailyMission)
+              );
+              displayMission();
+            }
+          }
+        }
+
+        function resetDailyMission() {
+          dailyMission = {
+            description: "Check the weather in 3 different cities today.",
+            progress: 0,
+            target: 3,
+            completed: false,
+          };
+          localStorage.setItem("dailyMission", JSON.stringify(dailyMission));
+          localStorage.removeItem("missionCities");
+          displayMission();
+        }
+
+        function displayMission() {
+          $("#daily-mission").remove();
+          const missionHtml = `
+                    <div id="daily-mission" class="mt-4 text-center">
+                        <h5>Daily Mission</h5>
+                        <p>${dailyMission.description}</p>
+                        <p>Progress: ${dailyMission.progress}/${dailyMission.target}</p>
+                    </div>
+                `;
+          $(".container").append(missionHtml);
+        }
+
+        // Reset mission at midnight
+        setInterval(function () {
+          const now = new Date();
+          if (now.getHours() === 0 && now.getMinutes() === 0) {
+            resetDailyMission();
+          }
+        }, 60000); // Check every minute
+
+        function triggerConfetti() {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 },
+          });
+        }
+
+        const quizQuestions = [
+          {
+            question: "What is the highest recorded temperature on Earth?",
+            options: ["56.7°C", "49.2°C", "62.1°C", "51.3°C"],
+            answer: "56.7°C",
+          },
+          {
+            question: "Which country experiences the most tornadoes?",
+            options: ["USA", "India", "Australia", "China"],
+            answer: "USA",
+          },
+          // Add more questions...
+        ];
+
+        function presentQuiz() {
+          const q =
+            quizQuestions[Math.floor(Math.random() * quizQuestions.length)];
+          Swal.fire({
+            title: "Quiz Time!",
+            text: q.question,
+            input: "select",
+            inputOptions: q.options.reduce((obj, option) => {
+              obj[option] = option;
+              return obj;
+            }, {}),
+            inputPlaceholder: "Select an answer",
+            showCancelButton: true,
+          }).then((result) => {
+            if (result.isConfirmed) {
+              if (result.value === q.answer) {
+                Swal.fire("Correct!", "You earned 20 extra points.", "success");
+                updatePoints(20);
+                updateXP(20);
+                updateCoins(10);
+              } else {
+                Swal.fire("Incorrect", "Better luck next time!", "error");
+              }
+            }
+          });
+        }
+
+        // Theme Change
+        $("#change-theme").on("click", function () {
+          const currentTheme = $("body").attr("class");
+          if (currentTheme === "theme-light") {
+            changeTheme("theme-dark");
+          } else {
+            changeTheme("theme-light");
+          }
+        });
+
+        function changeTheme(theme) {
+          $("body").removeClass().addClass(theme);
+          localStorage.setItem("theme", theme);
+        }
+
+        // Share Achievement
+        $("#share-button").on("click", function () {
+          if (navigator.share) {
+            navigator
+              .share({
+                title: "Gamified Weather Checker",
+                text: "I just unlocked a new achievement!",
+                url: window.location.href,
+              })
+              .then(() => console.log("Shared successfully"))
+              .catch((error) => console.log("Error sharing:", error));
+          } else {
+            Swal.fire(
+              "Oops!",
+              "Sharing not supported on this browser.",
+              "warning"
+            );
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
