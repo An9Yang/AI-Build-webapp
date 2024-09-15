@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sports News Web App</title>
+    <!-- Bootstrap CSS -->
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <!-- Font Awesome for Icons -->
+    <link
+      rel="stylesheet"
+      href="https://use.fontawesome.com/releases/v5.7.0/css/all.css"
+    />
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Masonry Layout -->
+    <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script>
+    <style>
+      body {
+        background-color: #f2f2f2;
+        font-family: "Montserrat", sans-serif;
+      }
+      .navbar {
+        background-color: #1a1a1a;
+      }
+      .navbar-brand {
+        font-weight: 700;
+      }
+      .nav-link {
+        color: #fff !important;
+        font-weight: 500;
+        margin-right: 15px;
+      }
+      .nav-link.active {
+        color: #ffcc00 !important;
+      }
+      .search-bar {
+        margin-top: 20px;
+      }
+      .news-grid {
+        margin-top: 30px;
+      }
+      .news-card {
+        margin-bottom: 30px;
+        transition: transform 0.2s;
+      }
+      .news-card:hover {
+        transform: scale(1.02);
+      }
+      .card-img-top {
+        height: 200px;
+        object-fit: cover;
+        border-radius: 0;
+      }
+      .card-body {
+        background-color: #fff;
+        border: 1px solid #e6e6e6;
+        border-top: none;
+        border-radius: 0 0 5px 5px;
+      }
+      .card-title {
+        font-size: 1.1em;
+        font-weight: 700;
+        color: #333;
+      }
+      .card-text {
+        font-size: 0.9em;
+        color: #666;
+      }
+      .card-text small {
+        color: #999;
+      }
+      .btn-read-more {
+        background-color: #ffcc00;
+        color: #000;
+        font-weight: 500;
+      }
+      .btn-read-more:hover {
+        background-color: #e6b800;
+        color: #000;
+      }
+      /* Loader Styles */
+      #loader {
+        text-align: center;
+        margin: 30px 0;
+        display: none;
+      }
+      .footer {
+        margin-top: 40px;
+        padding: 20px 0;
+        background-color: #1a1a1a;
+        color: #fff;
+        text-align: center;
+      }
+      @media (max-width: 576px) {
+        .navbar-brand {
+          font-size: 1.2em;
+        }
+        .nav-link {
+          font-size: 0.9em;
+        }
+        .card-title {
+          font-size: 1em;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+      <a class="navbar-brand" href="#"
+        ><i class="fas fa-basketball-ball"></i> SportsNews</a
+      >
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-toggle="collapse"
+        data-target="#navbarNav"
+        aria-controls="navbarNav"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <!-- Category Navigation -->
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ml-auto" id="category-nav">
+          <li class="nav-item">
+            <a class="nav-link active" href="#" data-category="football"
+              >Football</a
+            >
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-category="basketball"
+              >Basketball</a
+            >
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-category="tennis">Tennis</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-category="cricket">Cricket</a>
+          </li>
+          <!-- Add more categories as desired -->
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Search Bar -->
+    <div class="container search-bar">
+      <div class="input-group">
+        <input
+          type="text"
+          id="search-input"
+          class="form-control"
+          placeholder="Search for sports news..."
+        />
+        <div class="input-group-append">
+          <button class="btn btn-outline-secondary" id="search-button">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- News Grid -->
+    <div class="container news-grid">
+      <div id="news-container" class="row">
+        <!-- News articles will be displayed here -->
+      </div>
+      <!-- Loader -->
+      <div id="loader">
+        <div class="spinner-border text-secondary" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>&copy; 2023 Sports News Web App</p>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- Moment.js -->
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
+    <!-- NewsAPI Key (Insert your actual API key below) -->
+    <script>
+      const apiKey = "c765e7200aca455289c674251aa3ddfa"; // Insert your NewsAPI.org API key here
+    </script>
+    <script>
+      $(document).ready(function () {
+        const newsContainer = $("#news-container");
+        const loader = $("#loader");
+
+        // Initialize variables for pagination
+        let currentCategory = "football";
+        let currentQuery = "";
+        let currentPage = 1;
+        const pageSize = 12; // Number of articles per page
+        let loading = false; // Flag to prevent multiple simultaneous requests
+        let totalResults = 0; // To track total results
+
+        // Fetch news for the default category on page load
+        fetchNewsByCategory(currentCategory, currentPage);
+
+        // Category navigation click event
+        $("#category-nav .nav-link").on("click", function (e) {
+          e.preventDefault();
+          // Update active class
+          $("#category-nav .nav-link").removeClass("active");
+          $(this).addClass("active");
+
+          // Reset pagination and variables
+          currentCategory = $(this).data("category");
+          currentQuery = "";
+          currentPage = 1;
+          newsContainer.empty();
+          totalResults = 0;
+
+          // Fetch news for selected category
+          fetchNewsByCategory(currentCategory, currentPage);
+        });
+
+        // Search functionality
+        $("#search-button").on("click", function () {
+          const query = $("#search-input").val().trim();
+          if (query) {
+            // Reset pagination and variables
+            currentQuery = query;
+            currentCategory = "";
+            currentPage = 1;
+            newsContainer.empty();
+            totalResults = 0;
+
+            fetchNewsBySearch(currentQuery, currentPage);
+          } else {
+            alert("Please enter a search term.");
+          }
+        });
+
+        // Infinite Scroll
+        $(window).on("scroll", function () {
+          if (
+            $(window).scrollTop() + $(window).height() >=
+            $(document).height() - 100
+          ) {
+            if (!loading) {
+              if (currentQuery) {
+                if (newsContainer.children().length < totalResults) {
+                  currentPage++;
+                  fetchNewsBySearch(currentQuery, currentPage);
+                }
+              } else {
+                if (newsContainer.children().length < totalResults) {
+                  currentPage++;
+                  fetchNewsByCategory(currentCategory, currentPage);
+                }
+              }
+            }
+          }
+        });
+
+        // Fetch news by category
+        function fetchNewsByCategory(category, page) {
+          loading = true;
+          loader.show();
+          $.ajax({
+            url: `https://newsapi.org/v2/everything?q=${encodeURIComponent(
+              category
+            )}&apiKey=${apiKey}&language=en&pageSize=${pageSize}&page=${page}`,
+            method: "GET",
+            success: function (data) {
+              totalResults = data.totalResults;
+              if (data.articles.length > 0) {
+                displayNews(data.articles);
+              } else {
+                if (page === 1) {
+                  newsContainer.html(
+                    '<p class="text-center">No articles found for this category.</p>'
+                  );
+                }
+              }
+              loading = false;
+              loader.hide();
+            },
+            error: function () {
+              newsContainer.html(
+                '<p class="text-center text-danger">Error fetching news articles. Please try again later.</p>'
+              );
+              loading = false;
+              loader.hide();
+            },
+          });
+        }
+
+        // Fetch news by search query
+        function fetchNewsBySearch(query, page) {
+          loading = true;
+          loader.show();
+          $.ajax({
+            url: `https://newsapi.org/v2/everything?q=${encodeURIComponent(
+              query
+            )}&apiKey=${apiKey}&language=en&pageSize=${pageSize}&page=${page}`,
+            method: "GET",
+            success: function (data) {
+              totalResults = data.totalResults;
+              if (data.articles.length > 0) {
+                displayNews(data.articles);
+              } else {
+                if (page === 1) {
+                  newsContainer.html(
+                    '<p class="text-center">No articles found for your search.</p>'
+                  );
+                }
+              }
+              loading = false;
+              loader.hide();
+            },
+            error: function () {
+              newsContainer.html(
+                '<p class="text-center text-danger">Error fetching news articles. Please try again later.</p>'
+              );
+              loading = false;
+              loader.hide();
+            },
+          });
+        }
+
+        // Function to display news articles
+        function displayNews(articles) {
+          articles.forEach((article) => {
+            const publishedAt = moment(article.publishedAt).format(
+              "MMMM Do YYYY, h:mm a"
+            );
+            const author = article.author ? article.author : "Unknown";
+            const newsCard = `
+            <div class="col-md-4">
+              <div class="card news-card">
+                ${
+                  article.urlToImage
+                    ? `<img src="${article.urlToImage}" class="card-img-top" alt="News Image">`
+                    : `<img src="https://via.placeholder.com/400x200?text=No+Image" class="card-img-top" alt="No Image">`
+                }
+                <div class="card-body">
+                  <h5 class="card-title">${article.title}</h5>
+                  <p class="card-text">${article.description || ""}</p>
+                  <p class="card-text"><small><i class="fas fa-user"></i> ${author}</small></p>
+                  <p class="card-text"><small><i class="fas fa-calendar-alt"></i> ${publishedAt}</small></p>
+                  <a href="${
+                    article.url
+                  }" target="_blank" class="btn btn-read-more">Read More</a>
+                </div>
+              </div>
+            </div>
+          `;
+            newsContainer.append(newsCard);
+          });
+          // Initialize or reload Masonry layout
+          newsContainer.imagesLoaded(function () {
+            newsContainer.masonry({
+              itemSelector: ".col-md-4",
+              columnWidth: ".col-md-4",
+              percentPosition: true,
+            });
+          });
+        }
+      });
+    </script>
+    <!-- ImagesLoaded (for Masonry to work with images) -->
+    <script src="https://unpkg.com/imagesloaded@4/imagesloaded.pkgd.min.js"></script>
+  </body>
+</html>
