@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interactive Gas Simulation</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f0f0;
+        color: #333;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .simulation-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        width: 900px;
+      }
+
+      .header {
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      .controls {
+        display: flex;
+        justify-content: space-around;
+        margin: 20px 0;
+        width: 100%;
+        align-items: flex-end;
+      }
+
+      .control-button {
+        background: #4caf50;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+      }
+
+      .control-button:hover {
+        background: #45a049;
+      }
+
+      .particle-box {
+        width: 600px;
+        height: 400px;
+        background: #e0e0e0;
+        border: 2px solid #aaa;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+
+      .particles {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      .particles.light {
+        background: #87ceeb;
+      }
+
+      .particles.heavy {
+        background: #ff6347;
+      }
+
+      .status {
+        display: flex;
+        justify-content: space-around;
+        width: 100%;
+        font-size: 16px;
+      }
+
+      .status div {
+        text-align: center;
+      }
+
+      .thermometer {
+        width: 20px;
+        height: 150px;
+        background: #fff;
+        border: 2px solid #666;
+        border-radius: 10px 10px 10px 10px;
+        position: relative;
+        margin: 10px auto;
+        overflow: hidden;
+      }
+
+      .thermometer::before {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 20px;
+        height: 20px;
+        background: #ff4444;
+        border-radius: 50%;
+      }
+
+      .thermometer .mercury {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 6px;
+        background: #ff4444;
+        transition: height 0.3s ease;
+      }
+
+      .pressure-gauge {
+        width: 100px;
+        height: 100px;
+        border: 3px solid #666;
+        border-radius: 50%;
+        position: relative;
+        background: #fff;
+        margin: 10px auto;
+      }
+
+      .pressure-needle {
+        position: absolute;
+        width: 4px;
+        height: 45px;
+        background: #ff0000;
+        left: 48px;
+        bottom: 50px;
+        transform-origin: bottom center;
+        transform: rotate(0deg);
+        transition: transform 0.3s ease;
+      }
+
+      .bunsen-burner {
+        width: 120px;
+        height: 160px;
+        position: relative;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+
+      .bunsen-burner:hover {
+        transform: scale(1.05);
+      }
+
+      .bunsen-burner.active {
+        transform: scale(1.1);
+      }
+
+      .flame {
+        width: 30px;
+        height: 40px;
+        background: linear-gradient(45deg, #ff6b00, #ff0000);
+        border-radius: 50% 50% 20% 20%;
+        position: absolute;
+        bottom: 35px;
+        left: 45px;
+        opacity: 0;
+        transition: all 0.3s;
+        animation: flicker 0.5s infinite alternate;
+      }
+
+      @keyframes flicker {
+        0% {
+          transform: scaleY(1);
+        }
+        100% {
+          transform: scaleY(1.2);
+        }
+      }
+
+      .hand-pump {
+        width: 140px;
+        height: 200px;
+        position: relative;
+        cursor: grab;
+      }
+
+      .pump-body {
+        width: 60px;
+        height: 150px;
+        background: #999;
+        border-radius: 10px;
+        margin: 0 auto;
+        position: relative;
+      }
+
+      .pump-handle {
+        width: 100px;
+        height: 30px;
+        background: #666;
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        border-radius: 15px;
+        transform-origin: right center;
+        transition: transform 0.2s;
+        cursor: grab;
+      }
+
+      .pump-handle.active {
+        cursor: grabbing;
+        background: #555;
+      }
+
+      .pump-base {
+        width: 100px;
+        height: 20px;
+        background: #777;
+        margin: 0 auto;
+        border-radius: 5px;
+      }
+
+      .status {
+        margin-top: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="simulation-container">
+      <div class="header">
+        <h1>Interactive Gas Simulation</h1>
+        <p>
+          Control temperature, pump particles, and observe changes in pressure
+          and motion!
+        </p>
+      </div>
+
+      <div class="particle-box"></div>
+
+      <div class="controls">
+        <div class="bunsen-burner">
+          <div class="flame"></div>
+          <div class="burner-tube"></div>
+          <div class="burner-base"></div>
+        </div>
+        <div class="hand-pump">
+          <div class="pump-handle"></div>
+          <div class="pump-body"></div>
+          <div class="pump-base"></div>
+        </div>
+      </div>
+
+      <div class="status">
+        <div>
+          <strong>Temperature:</strong>
+          <span id="temperature">300 K</span>
+          <div class="thermometer">
+            <div class="mercury" id="mercury"></div>
+          </div>
+        </div>
+        <div>
+          <strong>Pressure:</strong>
+          <span id="pressure">1 atm</span>
+          <div class="pressure-gauge">
+            <div class="pressure-needle" id="pressure-needle"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const particleBox = document.querySelector(".particle-box");
+      const temperatureDisplay = document.getElementById("temperature");
+      const pressureDisplay = document.getElementById("pressure");
+      const mercury = document.getElementById("mercury");
+
+      let particles = [];
+      let temperature = 300; // Kelvin
+      let pressure = 1; // atm
+
+      // Initialize particles
+      const initParticles = (count, type) => {
+        for (let i = 0; i < count; i++) {
+          const particle = document.createElement("div");
+          particle.className = `particles ${type}`;
+          particle.style.left = `${Math.random() * 590}px`;
+          particle.style.top = `${Math.random() * 390}px`;
+          particleBox.appendChild(particle);
+          particles.push({
+            element: particle,
+            speedX: (Math.random() - 0.5) * 2,
+            speedY: (Math.random() - 0.5) * 2,
+          });
+        }
+      };
+
+      // Update particle positions
+      const updateParticles = () => {
+        particles.forEach((particle) => {
+          const boxRect = particleBox.getBoundingClientRect();
+          let x = parseFloat(particle.element.style.left);
+          let y = parseFloat(particle.element.style.top);
+
+          x += particle.speedX;
+          y += particle.speedY;
+
+          // Bounce particles off walls
+          if (x <= 0 || x >= boxRect.width - 10) particle.speedX *= -1;
+          if (y <= 0 || y >= boxRect.height - 10) particle.speedY *= -1;
+
+          particle.element.style.left = `${x}px`;
+          particle.element.style.top = `${y}px`;
+        });
+      };
+
+      // Update temperature and pressure
+      const updateStatus = () => {
+        // Calculate pressure based on particle count and temperature
+        pressure = ((particles.length * temperature) / 3000).toFixed(2);
+
+        // Update displays
+        temperatureDisplay.textContent = `${Math.round(temperature)} K`;
+        pressureDisplay.textContent = `${pressure} atm`;
+
+        // Update thermometer
+        const tempPercentage = ((temperature - 300) / 200) * 100;
+        mercury.style.height = `${Math.max(5, Math.min(95, tempPercentage))}%`;
+
+        // Update pressure gauge
+        const pressureNeedle = document.getElementById("pressure-needle");
+        const rotation = (pressure - 1) * 90; // 90 degrees rotation per atm
+        pressureNeedle.style.transform = `rotate(${Math.min(
+          180,
+          rotation
+        )}deg)`;
+      };
+
+      const bunsenBurner = document.querySelector(".bunsen-burner");
+      const flame = document.querySelector(".flame");
+      const handPump = document.querySelector(".pump-handle");
+      let isHeating = false;
+      let isDragging = false;
+      let startY = 0;
+      let originalY = 0;
+
+      // Bunsen burner interaction
+      bunsenBurner.addEventListener("mousedown", () => {
+        isHeating = true;
+        bunsenBurner.classList.add("active");
+        flame.classList.add("active");
+        heatingEffect();
+      });
+
+      document.addEventListener("mouseup", () => {
+        if (isHeating) {
+          isHeating = false;
+          bunsenBurner.classList.remove("active");
+          flame.classList.remove("active");
+        }
+      });
+
+      function heatingEffect() {
+        if (isHeating) {
+          temperature += 2;
+          particles.forEach((p) => {
+            p.speedX *= 1.01;
+            p.speedY *= 1.01;
+          });
+          updateStatus();
+          requestAnimationFrame(heatingEffect);
+        }
+      }
+
+      // Hand pump drag interaction
+      handPump.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        handPump.classList.add("active");
+        startY = e.clientY;
+        originalY = 20; // Default top position
+      });
+
+      document.addEventListener("mousemove", (e) => {
+        if (isDragging) {
+          const deltaY = e.clientY - startY;
+          const newY = Math.max(0, Math.min(100, originalY + deltaY));
+          handPump.style.top = `${newY}px`;
+
+          if (newY > 60) {
+            // Threshold for adding particles
+            initParticles(1, "heavy");
+            updateStatus();
+            handPump.style.top = "20px"; // Reset position
+            startY = e.clientY;
+          }
+        }
+      });
+
+      document.addEventListener("mouseup", () => {
+        if (isDragging) {
+          isDragging = false;
+          handPump.classList.remove("active");
+          handPump.style.top = "20px"; // Reset position
+        }
+      });
+
+      // Natural cooling effect
+      setInterval(() => {
+        if (!isHeating && temperature > 300) {
+          temperature = Math.max(300, temperature - 1);
+          particles.forEach((p) => {
+            p.speedX *= 0.99;
+            p.speedY *= 0.99;
+          });
+          updateStatus();
+        }
+      }, 100);
+
+      // Animation loop
+      const animate = () => {
+        updateParticles();
+        requestAnimationFrame(animate);
+      };
+
+      // Initialize
+      initParticles(20, "light");
+      animate();
+      updateStatus();
+    </script>
+  </body>
+</html>
