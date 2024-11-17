@@ -147,87 +147,200 @@
       }
 
       .bunsen-burner {
-        width: 120px;
-        height: 160px;
         position: relative;
+        width: 80px;
+        height: 180px;
         cursor: pointer;
-        transition: transform 0.2s;
       }
 
-      .bunsen-burner:hover {
-        transform: scale(1.05);
+      .burner-base {
+        position: absolute;
+        bottom: 0;
+        width: 80px;
+        height: 40px;
+        background: #555;
+        border-radius: 10px;
       }
 
-      .bunsen-burner.active {
-        transform: scale(1.1);
+      .burner-knob {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        width: 15px;
+        height: 15px;
+        background: #333;
+        border-radius: 50%;
+      }
+
+      .burner-barrel {
+        position: absolute;
+        bottom: 40px;
+        left: 30px;
+        width: 20px;
+        height: 100px;
+        background: linear-gradient(to top, #666, #999);
       }
 
       .flame {
-        width: 30px;
-        height: 40px;
-        background: linear-gradient(45deg, #ff6b00, #ff0000);
-        border-radius: 50% 50% 20% 20%;
         position: absolute;
-        bottom: 35px;
-        left: 45px;
+        bottom: 140px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 30px;
+        height: 60px;
+        background: radial-gradient(
+          circle at bottom,
+          rgba(255, 165, 0, 0.8),
+          transparent 70%
+        );
         opacity: 0;
-        transition: all 0.3s;
+        transition: opacity 0.3s;
         animation: flicker 0.5s infinite alternate;
+      }
+
+      .flame.active {
+        opacity: 1;
       }
 
       @keyframes flicker {
         0% {
-          transform: scaleY(1);
+          transform: translateX(-50%) scaleY(1);
         }
         100% {
-          transform: scaleY(1.2);
+          transform: translateX(-50%) scaleY(1.1);
         }
       }
 
       .hand-pump {
-        width: 140px;
-        height: 200px;
         position: relative;
+        width: 80px;
+        height: 180px;
         cursor: grab;
-      }
-
-      .pump-body {
-        width: 60px;
-        height: 150px;
-        background: #999;
-        border-radius: 10px;
-        margin: 0 auto;
-        position: relative;
-      }
-
-      .pump-handle {
-        width: 100px;
-        height: 30px;
-        background: #666;
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        border-radius: 15px;
-        transform-origin: right center;
-        transition: transform 0.2s;
-        cursor: grab;
-      }
-
-      .pump-handle.active {
-        cursor: grabbing;
-        background: #555;
       }
 
       .pump-base {
-        width: 100px;
-        height: 20px;
+        position: absolute;
+        bottom: 0;
+        width: 80px;
+        height: 40px;
+        background: #555;
+      }
+
+      .pump-cylinder {
+        position: absolute;
+        bottom: 40px;
+        left: 20px;
+        width: 40px;
+        height: 100px;
         background: #777;
-        margin: 0 auto;
-        border-radius: 5px;
+      }
+
+      .pump-piston {
+        position: absolute;
+        bottom: 0;
+        width: 40px;
+        height: 50px;
+        background: #999;
+      }
+
+      .pump-handle {
+        position: absolute;
+        bottom: 140px;
+        left: 10px;
+        width: 60px;
+        height: 10px;
+        background: #444;
+        transform-origin: left center;
+        transition: transform 0.2s;
+      }
+
+      .pump-handle.active {
+        background: #333;
+        cursor: grabbing;
       }
 
       .status {
         margin-top: 30px;
+      }
+
+      /* Enhanced hand pump styles */
+      .hand-pump {
+        position: relative;
+        width: 80px;
+        height: 180px;
+      }
+
+      .pump-base {
+        position: absolute;
+        bottom: 0;
+        width: 80px;
+        height: 20px;
+        background: #555;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+      }
+
+      .pump-cylinder {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        width: 40px;
+        height: 120px;
+        background: #777;
+        border-radius: 5px;
+        overflow: hidden;
+      }
+
+      .pump-piston {
+        position: absolute;
+        bottom: 0;
+        width: 40px;
+        height: 100%;
+        background: linear-gradient(to top, #ccc, #999);
+        transform: translateY(0);
+        transition: transform 0.2s;
+      }
+
+      .pump-handle {
+        position: absolute;
+        bottom: 140px;
+        left: 10px;
+        width: 60px;
+        height: 10px;
+        background: #444;
+        transform-origin: left center;
+        cursor: grab;
+        transition: transform 0.2s;
+      }
+
+      .pump-handle.active {
+        background: #333;
+        cursor: grabbing;
+      }
+
+      /* Enhance pressure gauge styles */
+      .pressure-gauge {
+        position: relative;
+      }
+
+      .pressure-gauge .tick {
+        position: absolute;
+        width: 2px;
+        height: 10px;
+        background: #666;
+        left: 50%;
+        bottom: 50px;
+        transform-origin: bottom center;
+      }
+
+      .pressure-gauge .label {
+        position: absolute;
+        font-size: 10px;
+        text-align: center;
+        width: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 35px;
       }
     </style>
   </head>
@@ -245,14 +358,19 @@
 
       <div class="controls">
         <div class="bunsen-burner">
+          <div class="burner-base">
+            <div class="burner-knob"></div>
+            <div class="burner-barrel"></div>
+          </div>
           <div class="flame"></div>
-          <div class="burner-tube"></div>
-          <div class="burner-base"></div>
         </div>
         <div class="hand-pump">
-          <div class="pump-handle"></div>
-          <div class="pump-body"></div>
-          <div class="pump-base"></div>
+          <div class="pump-base">
+            <div class="pump-cylinder">
+              <div class="pump-piston"></div>
+            </div>
+            <div class="pump-handle"></div>
+          </div>
         </div>
       </div>
 
@@ -319,10 +437,13 @@
         });
       };
 
-      // Update temperature and pressure
-      const updateStatus = () => {
-        // Calculate pressure based on particle count and temperature
-        pressure = ((particles.length * temperature) / 3000).toFixed(2);
+      // Refine pressure calculation using the ideal gas law
+      const R = 8.314; // Universal gas constant
+      const V = 1; // Assume unit volume
+
+      function updateStatus() {
+        const n = particles.length / 100; // Simplify particle count to moles
+        pressure = ((n * R * temperature) / V / 100000).toFixed(2); // Adjust units for realism
 
         // Update displays
         temperatureDisplay.textContent = `${Math.round(temperature)} K`;
@@ -334,78 +455,99 @@
 
         // Update pressure gauge
         const pressureNeedle = document.getElementById("pressure-needle");
-        const rotation = (pressure - 1) * 90; // 90 degrees rotation per atm
-        pressureNeedle.style.transform = `rotate(${Math.min(
-          180,
-          rotation
+        const maxPressure = 2; // Maximum gauge pressure in atm
+        const rotation = (pressure / maxPressure) * 180 - 90; // Rotate from -90 to 90 degrees
+        pressureNeedle.style.transform = `rotate(${Math.max(
+          -90,
+          Math.min(90, rotation)
         )}deg)`;
-      };
+      }
+
+      // Add gauge ticks and labels
+      function createPressureGaugeMarkers() {
+        const gauge = document.querySelector(".pressure-gauge");
+        for (let i = 0; i <= 4; i++) {
+          const tick = document.createElement("div");
+          tick.className = "tick";
+          const angle = -90 + i * 45;
+          tick.style.transform = `rotate(${angle}deg) translate(-50%, -100%)`;
+          gauge.appendChild(tick);
+
+          const label = document.createElement("div");
+          label.className = "label";
+          label.textContent = (i * 0.5).toFixed(1);
+          label.style.transform = `rotate(${angle}deg) translate(0, -70px) rotate(${-angle}deg)`;
+          gauge.appendChild(label);
+        }
+      }
+
+      // Call the function once during initialization
+      createPressureGaugeMarkers();
 
       const bunsenBurner = document.querySelector(".bunsen-burner");
       const flame = document.querySelector(".flame");
       const handPump = document.querySelector(".pump-handle");
       let isHeating = false;
-      let isDragging = false;
-      let startY = 0;
-      let originalY = 0;
 
       // Bunsen burner interaction
       bunsenBurner.addEventListener("mousedown", () => {
         isHeating = true;
-        bunsenBurner.classList.add("active");
         flame.classList.add("active");
         heatingEffect();
       });
 
       document.addEventListener("mouseup", () => {
-        if (isHeating) {
-          isHeating = false;
-          bunsenBurner.classList.remove("active");
-          flame.classList.remove("active");
-        }
+        isHeating = false;
+        flame.classList.remove("active");
       });
 
       function heatingEffect() {
         if (isHeating) {
-          temperature += 2;
+          temperature += 1;
           particles.forEach((p) => {
-            p.speedX *= 1.01;
-            p.speedY *= 1.01;
+            p.speedX *= 1.005;
+            p.speedY *= 1.005;
           });
           updateStatus();
           requestAnimationFrame(heatingEffect);
         }
       }
 
-      // Hand pump drag interaction
-      handPump.addEventListener("mousedown", (e) => {
-        isDragging = true;
-        handPump.classList.add("active");
-        startY = e.clientY;
-        originalY = 20; // Default top position
+      // Correct the enhanced hand pump interaction
+      const pumpHandle = document.querySelector(".pump-handle");
+      const pumpPiston = document.querySelector(".pump-piston");
+      let isPumping = false;
+      let pumpStartY = 0;
+
+      pumpHandle.addEventListener("mousedown", (e) => {
+        isPumping = true;
+        pumpHandle.classList.add("active");
+        pumpStartY = e.clientY;
       });
 
       document.addEventListener("mousemove", (e) => {
-        if (isDragging) {
-          const deltaY = e.clientY - startY;
-          const newY = Math.max(0, Math.min(100, originalY + deltaY));
-          handPump.style.top = `${newY}px`;
+        if (isPumping) {
+          const deltaY = e.clientY - pumpStartY;
+          const maxPull = 80;
+          const pullDistance = Math.max(0, Math.min(maxPull, deltaY));
+          const handleRotation = -pullDistance / 1.5; // Adjust rotation sensitivity
+          pumpHandle.style.transform = `rotate(${handleRotation}deg)`;
+          pumpPiston.style.transform = `translateY(${-pullDistance}px)`;
 
-          if (newY > 60) {
-            // Threshold for adding particles
-            initParticles(1, "heavy");
+          if (pullDistance >= maxPull) {
+            initParticles(2, "heavy"); // Add particles when fully pulled
             updateStatus();
-            handPump.style.top = "20px"; // Reset position
-            startY = e.clientY;
+            pumpStartY = e.clientY; // Reset starting point
           }
         }
       });
 
       document.addEventListener("mouseup", () => {
-        if (isDragging) {
-          isDragging = false;
-          handPump.classList.remove("active");
-          handPump.style.top = "20px"; // Reset position
+        if (isPumping) {
+          isPumping = false;
+          pumpHandle.classList.remove("active");
+          pumpHandle.style.transform = "rotate(0deg)";
+          pumpPiston.style.transform = "translateY(0)";
         }
       });
 
